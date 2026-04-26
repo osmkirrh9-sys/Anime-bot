@@ -20,23 +20,26 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
 
-// 📁 البيانات
-const data = {
-  action: JSON.parse(fs.readFileSync('./action.json')),
-  romance: JSON.parse(fs.readFileSync('./romance.json')),
-  horror: JSON.parse(fs.readFileSync('./horror.json')),
-  comedy: JSON.parse(fs.readFileSync('./comedy.json')),
-  drama: JSON.parse(fs.readFileSync('./drama.json')),
-  shonen: JSON.parse(fs.readFileSync('./shonen.json')),
-  fantasy: JSON.parse(fs.readFileSync('./fantasy.json')),
-  mystery: JSON.parse(fs.readFileSync('./mystery.json'))
-};
+// ✅ قراءة البيانات كل مرة (المهم)
+function getData() {
+  return {
+    action: JSON.parse(fs.readFileSync('./action.json', 'utf-8')),
+    romance: JSON.parse(fs.readFileSync('./romance.json', 'utf-8')),
+    horror: JSON.parse(fs.readFileSync('./horror.json', 'utf-8')),
+    comedy: JSON.parse(fs.readFileSync('./comedy.json', 'utf-8')),
+    drama: JSON.parse(fs.readFileSync('./drama.json', 'utf-8')),
+    shonen: JSON.parse(fs.readFileSync('./shonen.json', 'utf-8')),
+    fantasy: JSON.parse(fs.readFileSync('./fantasy.json', 'utf-8')),
+    mystery: JSON.parse(fs.readFileSync('./mystery.json', 'utf-8'))
+  };
+}
 
 // 🔍 تخزين آخر بحث
 let lastSearch = [];
 
 // 🔍 البحث
 function searchAnime(query) {
+  const data = getData();
   query = query.toLowerCase().trim();
   let results = [];
 
@@ -92,6 +95,7 @@ client.on('interactionCreate', async interaction => {
 
     // اختيار تصنيف
     if (interaction.isStringSelectMenu()) {
+      const data = getData();
       const cat = interaction.values[0];
       const list = data[cat];
 
@@ -117,6 +121,7 @@ client.on('interactionCreate', async interaction => {
 
       await interaction.deferReply({ ephemeral: true });
 
+      const data = getData();
       const [, cat, i] = interaction.customId.split("_");
       const anime = data[cat][i];
 
