@@ -20,7 +20,7 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
 
-// ✅ قراءة البيانات كل مرة (المهم)
+// ✅ قراءة البيانات كل مرة
 function getData() {
   return {
     action: JSON.parse(fs.readFileSync('./action.json', 'utf-8')),
@@ -102,16 +102,28 @@ client.on('interactionCreate', async interaction => {
       if (!list || list.length === 0)
         return interaction.reply({ content: "❌ مافي أنميات هنا", ephemeral: true });
 
-      const buttons = list.slice(0, 5).map((a, i) =>
-        new ButtonBuilder()
-          .setCustomId(`anime_${cat}_${i}`)
-          .setLabel(a.name)
-          .setStyle(ButtonStyle.Secondary)
-      );
+      // ✅ تقسيم الأزرار إلى صفوف (كل صف 5)
+      const rows = [];
+      const chunkSize = 5;
+
+      for (let i = 0; i < list.length; i += chunkSize) {
+        const chunk = list.slice(i, i + chunkSize);
+
+        const row = new ActionRowBuilder().addComponents(
+          chunk.map((a, index) =>
+            new ButtonBuilder()
+              .setCustomId(`anime_${cat}_${i + index}`)
+              .setLabel(a.name)
+              .setStyle(ButtonStyle.Secondary)
+          )
+        );
+
+        rows.push(row);
+      }
 
       return interaction.reply({
         content: "اختر أنمي:",
-        components: [new ActionRowBuilder().addComponents(buttons)],
+        components: rows,
         ephemeral: true
       });
     }
