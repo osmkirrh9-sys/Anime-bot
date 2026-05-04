@@ -65,7 +65,26 @@ client.once('ready', async () => {
     new ButtonBuilder().setCustomId('search').setLabel('🔍 بحث').setStyle(ButtonStyle.Secondary)
   );
 
-  channel.send({ content: "اختر:", components: [row] });
+  const embed = new EmbedBuilder()
+  .setTitle("🎌 مرحبًا بك في بوت الأنمي")
+  .setDescription(`
+📚 هذا البوت يعطيك اقتراحات أنمي حسب التصنيف.
+
+✨ المميزات:
+• أكشن
+• رومانسي
+• رعب
+• كوميدي
+• وأكثر...
+
+🔍 تقدر تبحث عن أي أنمي بزر البحث.
+
+💡 اختر من الأزرار تحت واستمتع.
+`);
+
+channel.send({
+  embeds: [embed],
+  components: [row]
 });
 
 // 🎮 التفاعل
