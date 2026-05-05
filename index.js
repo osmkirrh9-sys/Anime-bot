@@ -7,15 +7,22 @@ const {
   EmbedBuilder,
   StringSelectMenuBuilder,
   ModalBuilder,
-  TextInputBuilder,
+ TextInputBuilder,
   TextInputStyle
 } = require('discord.js');
 
 const fs = require('fs');
-const fetch = require('node-fetch');
+
+const {
+  GoogleGenerativeAI
+} = require('@google/generative-ai');
 
 process.on('unhandledRejection', console.error);
 process.on('uncaughtException', console.error);
+
+// =====================
+// Discord Client
+// =====================
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
@@ -25,13 +32,18 @@ const client = new Client({
 // Gemini
 // =====================
 
-const API_KEY = process.env.GEMINI_API_KEY;
+const genAI =
+  new GoogleGenerativeAI(
+    process.env.GEMINI_API_KEY
+  );
 
-const API_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+const model =
+  genAI.getGenerativeModel({
+    model: "gemini-1.5-flash"
+  });
 
 // =====================
-// كاش
+// Cache
 // =====================
 
 const cachePath = './cache.json';
@@ -47,22 +59,31 @@ if (fs.existsSync(cachePath)) {
 }
 
 // =====================
-// التصنيفات
+// Categories
 // =====================
 
 const categories = {
+
   action: "اكشن",
+
   romance: "رومانسي",
+
   horror: "رعب",
+
   comedy: "كوميدي",
+
   drama: "دراما",
+
   shonen: "شونين",
+
   fantasy: "فانتازي",
+
   mystery: "غموض"
+
 };
 
 // =====================
-// تحميل ملفات JSON
+// Load JSON
 // =====================
 
 let data = {};
@@ -79,7 +100,8 @@ function loadData() {
           'utf8'
         );
 
-      data[cat] = JSON.parse(file);
+      data[cat] =
+        JSON.parse(file);
 
     } catch {
 
@@ -94,7 +116,7 @@ function loadData() {
 loadData();
 
 // =====================
-// بحث
+// Search
 // =====================
 
 let lastSearch = [];
@@ -111,6 +133,7 @@ function searchAnime(query) {
     for (const anime of data[cat]) {
 
       if (
+        anime.name &&
         anime.name
           .toLowerCase()
           .includes(query)
@@ -129,14 +152,14 @@ function searchAnime(query) {
 }
 
 // =====================
-// توليد الملخص
+// Gemini Story
 // =====================
 
 async function generateAnimeStory(animeName) {
 
   try {
 
-    // كاش
+    // Cache
     if (cache[animeName]) {
       return cache[animeName];
     }
@@ -153,49 +176,13 @@ async function generateAnimeStory(animeName) {
 - لا تحرق النهاية بالكامل
 `;
 
-    const response = await fetch(
-      `${API_URL}?key=${API_KEY}`,
-      {
-        method: "POST",
-
-        headers: {
-          "Content-Type":
-            "application/json"
-        },
-
-        body: JSON.stringify({
-
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt
-                }
-              ]
-            }
-          ]
-
-        })
-
-      }
-    );
-
-    const json =
-      await response.json();
-
-    console.log(json);
-
-    if (!json.candidates) {
-
-      return "❌ تعذر إنشاء الملخص";
-
-    }
+    const result =
+      await model.generateContent(prompt);
 
     const text =
-      json.candidates[0]
-      .content.parts[0].text;
+      result.response.text();
 
-    // حفظ بالكاش
+    // Save Cache
     cache[animeName] = text;
 
     fs.writeFileSync(
@@ -213,14 +200,14 @@ async function generateAnimeStory(animeName) {
 
     console.log(err);
 
-    return "❌ حصل خطأ أثناء إنشاء الملخص";
+    return "❌ تعذر إنشاء الملخص";
 
   }
 
 }
 
 // =====================
-// تشغيل البوت
+// Ready
 // =====================
 
 client.once('ready', async () => {
@@ -235,12 +222,14 @@ client.once('ready', async () => {
     );
 
   if (!channel) {
+
     return console.log(
       "❌ الروم غير موجود"
     );
+
   }
 
-  // Embed الترحيب
+  // Embed
   const welcomeEmbed =
     new EmbedBuilder()
 
@@ -251,32 +240,38 @@ client.once('ready', async () => {
       )
 
       .setDescription(`
-بوت اقتراحات أنمي مع ملخصات طويلة بالذكاء الاصطناعي 🔥
+بوت أنميات احترافي 🔥
 
 ✨ المميزات:
 • اقتراحات أنمي
 • تصنيفات كثيرة
 • بحث سريع
-• ملخصات طويلة
-• سرعة عالية
+• ملخصات طويلة بالذكاء الاصطناعي
 
-اضغط الزر وابدأ 🎬
+ابدأ من الأزرار تحت 🎬
 `);
 
+  // Buttons
   const row =
     new ActionRowBuilder()
       .addComponents(
 
         new ButtonBuilder()
+
           .setCustomId('anime')
+
           .setLabel('🎌 أنمي')
+
           .setStyle(
             ButtonStyle.Primary
           ),
 
         new ButtonBuilder()
+
           .setCustomId('search')
+
           .setLabel('🔍 بحث')
+
           .setStyle(
             ButtonStyle.Secondary
           )
@@ -294,7 +289,7 @@ client.once('ready', async () => {
 });
 
 // =====================
-// التفاعلات
+// Interactions
 // =====================
 
 client.on(
@@ -304,7 +299,7 @@ client.on(
     try {
 
       // =================
-      // زر الأنمي
+      // Anime Button
       // =================
 
       if (
@@ -353,7 +348,7 @@ client.on(
       }
 
       // =================
-      // اختيار تصنيف
+      // Category
       // =================
 
       if (
@@ -370,7 +365,7 @@ client.on(
 
         if (
           !list ||
-          list.length === 0
+          !list.length
         ) {
 
           return interaction.reply({
@@ -437,7 +432,7 @@ client.on(
       }
 
       // =================
-      // عرض الأنمي
+      // Show Anime
       // =================
 
       if (
@@ -474,6 +469,7 @@ client.on(
 
         }
 
+        // AI Story
         const story =
           await generateAnimeStory(
             anime.name
@@ -501,7 +497,7 @@ client.on(
       }
 
       // =================
-      // زر البحث
+      // Search Button
       // =================
 
       if (
@@ -549,7 +545,7 @@ client.on(
       }
 
       // =================
-      // تنفيذ البحث
+      // Search
       // =================
 
       if (
@@ -638,7 +634,7 @@ client.on(
       }
 
       // =================
-      // عرض البحث
+      // Search Result
       // =================
 
       if (
