@@ -30,21 +30,21 @@ const client = new Client({
 
 const categories = {
 
-  action: "اكشن",
+  action: "🔥اكشن",
 
-  romance: "رومانسي",
+  romance: "❤رومانسي",
 
-  horror: "رعب",
+  horror: "👻رعب",
 
-  comedy: "كوميدي",
+  comedy: "🥳كوميدي",
 
-  drama: "دراما",
+  drama: "💔دراما",
 
-  shonen: "شونين",
+  shonen: "🌀شونين",
 
-  fantasy: "فانتازي",
+  fantasy: "📼فانتازي",
 
-  mystery: "غموض"
+  mystery: "🧠غموض"
 
 };
 
@@ -265,9 +265,8 @@ client.once('ready', async () => {
 • تصنيفات كثيرة
 • بحث سريع
 • صفحات تنقل
-• ملخصات طويلة
-
-ابدأ من الأزرار تحت 🎬
+•ملخصات طويلة 
+الي عليك ابدأ من الأزرار تحت 🎬
 `);
 
   const row =
