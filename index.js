@@ -28,7 +28,7 @@ const client = new Client({
 const API_KEY = process.env.GEMINI_API_KEY;
 
 const API_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
 // =====================
 // كاش
