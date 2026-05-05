@@ -7,7 +7,7 @@ const {
   EmbedBuilder,
   StringSelectMenuBuilder,
   ModalBuilder,
- TextInputBuilder,
+  TextInputBuilder,
   TextInputStyle
 } = require('discord.js');
 
@@ -20,31 +20,29 @@ const {
 process.on('unhandledRejection', console.error);
 process.on('uncaughtException', console.error);
 
-// =====================
+// ======================
 // Discord Client
-// =====================
+// ======================
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
 
-// =====================
+// ======================
 // Gemini
-// =====================
+// ======================
 
-const genAI =
-  new GoogleGenerativeAI(
-    process.env.GEMINI_API_KEY
-  );
+const genAI = new GoogleGenerativeAI(
+  process.env.GEMINI_API_KEY
+);
 
-const model =
-  genAI.getGenerativeModel({
-    model: "gemini-2.0-flash"
-  });
+const model = genAI.getGenerativeModel({
+  model: "gemini-2.0-flash"
+});
 
-// =====================
+// ======================
 // Cache
-// =====================
+// ======================
 
 const cachePath = './cache.json';
 
@@ -58,9 +56,9 @@ if (fs.existsSync(cachePath)) {
 
 }
 
-// =====================
+// ======================
 // Categories
-// =====================
+// ======================
 
 const categories = {
 
@@ -82,9 +80,9 @@ const categories = {
 
 };
 
-// =====================
-// Load JSON
-// =====================
+// ======================
+// Load Data
+// ======================
 
 let data = {};
 
@@ -94,14 +92,12 @@ function loadData() {
 
     try {
 
-      const file =
-        fs.readFileSync(
-          `./${cat}.json`,
-          'utf8'
-        );
+      const file = fs.readFileSync(
+        `./${cat}.json`,
+        'utf8'
+      );
 
-      data[cat] =
-        JSON.parse(file);
+      data[cat] = JSON.parse(file);
 
     } catch {
 
@@ -115,16 +111,15 @@ function loadData() {
 
 loadData();
 
-// =====================
+// ======================
 // Search
-// =====================
+// ======================
 
 let lastSearch = [];
 
 function searchAnime(query) {
 
-  query =
-    query.toLowerCase().trim();
+  query = query.toLowerCase().trim();
 
   let results = [];
 
@@ -134,9 +129,7 @@ function searchAnime(query) {
 
       if (
         anime.name &&
-        anime.name
-          .toLowerCase()
-          .includes(query)
+        anime.name.toLowerCase().includes(query)
       ) {
 
         results.push(anime);
@@ -151,15 +144,14 @@ function searchAnime(query) {
 
 }
 
-// =====================
-// Gemini Story
-// =====================
+// ======================
+// Generate Story
+// ======================
 
 async function generateAnimeStory(animeName) {
 
   try {
 
-    // Cache
     if (cache[animeName]) {
       return cache[animeName];
     }
@@ -171,27 +163,26 @@ async function generateAnimeStory(animeName) {
 - 20 سطر على الأقل
 - عربي فقط
 - بدون عناوين
+- بدون ترقيم
 - بدون اختصار
-- اشرح الشخصيات والقصة والتطورات
+- اشرح الشخصيات والأحداث والتطورات
 - لا تحرق النهاية بالكامل
 `;
 
     const result =
       await model.generateContent(prompt);
 
-    const text =
-      result.response.text();
+    const response =
+      await result.response;
 
-    // Save Cache
+    const text =
+      response.text();
+
     cache[animeName] = text;
 
     fs.writeFileSync(
       cachePath,
-      JSON.stringify(
-        cache,
-        null,
-        2
-      )
+      JSON.stringify(cache, null, 2)
     );
 
     return text;
@@ -206,9 +197,9 @@ async function generateAnimeStory(animeName) {
 
 }
 
-// =====================
+// ======================
 // Ready
-// =====================
+// ======================
 
 client.once('ready', async () => {
 
@@ -221,16 +212,9 @@ client.once('ready', async () => {
       "1497454202044022784"
     );
 
-  if (!channel) {
+  if (!channel) return;
 
-    return console.log(
-      "❌ الروم غير موجود"
-    );
-
-  }
-
-  // Embed
-  const welcomeEmbed =
+  const embed =
     new EmbedBuilder()
 
       .setColor("Blue")
@@ -251,46 +235,32 @@ client.once('ready', async () => {
 ابدأ من الأزرار تحت 🎬
 `);
 
-  // Buttons
   const row =
     new ActionRowBuilder()
       .addComponents(
 
         new ButtonBuilder()
-
           .setCustomId('anime')
-
           .setLabel('🎌 أنمي')
-
-          .setStyle(
-            ButtonStyle.Primary
-          ),
+          .setStyle(ButtonStyle.Primary),
 
         new ButtonBuilder()
-
           .setCustomId('search')
-
           .setLabel('🔍 بحث')
-
-          .setStyle(
-            ButtonStyle.Secondary
-          )
+          .setStyle(ButtonStyle.Secondary)
 
       );
 
-  await channel.send({
-
-    embeds: [welcomeEmbed],
-
+  channel.send({
+    embeds: [embed],
     components: [row]
-
   });
 
 });
 
-// =====================
+// ======================
 // Interactions
-// =====================
+// ======================
 
 client.on(
   'interactionCreate',
@@ -321,14 +291,11 @@ client.on(
 
                 .addOptions(
 
-                  Object.entries(
-                    categories
-                  ).map(
-                    ([id, name]) => ({
+                  Object.entries(categories)
+                    .map(([id, name]) => ({
                       label: name,
                       value: id
-                    })
-                  )
+                    }))
 
                 )
 
@@ -469,7 +436,6 @@ client.on(
 
         }
 
-        // AI Story
         const story =
           await generateAnimeStory(
             anime.name
@@ -567,9 +533,7 @@ client.on(
         const results =
           searchAnime(query);
 
-        if (
-          !results.length
-        ) {
+        if (!results.length) {
 
           return interaction.editReply({
 
@@ -694,7 +658,7 @@ client.on(
 
     } catch (err) {
 
-      console.log(err);
+      console.error(err);
 
     }
 
