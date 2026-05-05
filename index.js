@@ -198,9 +198,9 @@ async function generateAnimeStory(animeName) {
 
   } catch (err) {
 
-    console.log(err);
+    console.error(err);
 
-    return "❌ تعذر إنشاء الملخص";
+    return `❌ ${err.message}`;
 
   }
 
