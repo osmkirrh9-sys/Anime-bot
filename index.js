@@ -13,10 +13,6 @@ const {
 
 const fs = require('fs');
 
-const {
-  GoogleGenerativeAI
-} = require('@google/generative-ai');
-
 process.on('unhandledRejection', console.error);
 process.on('uncaughtException', console.error);
 
@@ -27,34 +23,6 @@ process.on('uncaughtException', console.error);
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
-
-// ======================
-// Gemini
-// ======================
-
-const genAI = new GoogleGenerativeAI(
-  process.env.GEMINI_API_KEY
-);
-
-const model = genAI.getGenerativeModel({
-  model: "gemini-2.0-flash"
-});
-
-// ======================
-// Cache
-// ======================
-
-const cachePath = './cache.json';
-
-let cache = {};
-
-if (fs.existsSync(cachePath)) {
-
-  cache = JSON.parse(
-    fs.readFileSync(cachePath, 'utf8')
-  );
-
-}
 
 // ======================
 // Categories
@@ -81,7 +49,13 @@ const categories = {
 };
 
 // ======================
-// Load Data
+// Settings
+// ======================
+
+const PAGE_SIZE = 8;
+
+// ======================
+// Load JSON
 // ======================
 
 let data = {};
@@ -92,12 +66,14 @@ function loadData() {
 
     try {
 
-      const file = fs.readFileSync(
-        `./${cat}.json`,
-        'utf8'
-      );
+      const file =
+        fs.readFileSync(
+          `./${cat}.json`,
+          'utf8'
+        );
 
-      data[cat] = JSON.parse(file);
+      data[cat] =
+        JSON.parse(file);
 
     } catch {
 
@@ -119,7 +95,8 @@ let lastSearch = [];
 
 function searchAnime(query) {
 
-  query = query.toLowerCase().trim();
+  query =
+    query.toLowerCase().trim();
 
   let results = [];
 
@@ -129,7 +106,9 @@ function searchAnime(query) {
 
       if (
         anime.name &&
-        anime.name.toLowerCase().includes(query)
+        anime.name
+          .toLowerCase()
+          .includes(query)
       ) {
 
         results.push(anime);
@@ -145,55 +124,104 @@ function searchAnime(query) {
 }
 
 // ======================
-// Generate Story
+// Anime Page
 // ======================
 
-async function generateAnimeStory(animeName) {
+function createAnimePage(cat, page) {
 
-  try {
+  const list =
+    data[cat];
 
-    if (cache[animeName]) {
-      return cache[animeName];
-    }
+  const start =
+    page * PAGE_SIZE;
 
-    const prompt = `
-اكتب ملخص عربي طويل جدًا لأنمي ${animeName}
+  const end =
+    start + PAGE_SIZE;
 
-الشروط:
-- 20 سطر على الأقل
-- عربي فقط
-- بدون عناوين
-- بدون ترقيم
-- بدون اختصار
-- اشرح الشخصيات والأحداث والتطورات
-- لا تحرق النهاية بالكامل
-`;
+  const current =
+    list.slice(start, end);
 
-    const result =
-      await model.generateContent(prompt);
+  const animeButtons =
+    current.map(
+      (anime, index) =>
 
-    const response =
-      await result.response;
+        new ButtonBuilder()
 
-    const text =
-      response.text();
+          .setCustomId(
+            `anime_${cat}_${start + index}`
+          )
 
-    cache[animeName] = text;
+          .setLabel(
+            anime.name
+          )
 
-    fs.writeFileSync(
-      cachePath,
-      JSON.stringify(cache, null, 2)
+          .setStyle(
+            ButtonStyle.Secondary
+          )
+
     );
 
-    return text;
+  const rows = [];
 
-  } catch (err) {
+  for (
+    let i = 0;
+    i < animeButtons.length;
+    i += 4
+  ) {
 
-    console.error(err);
+    rows.push(
 
-    return `❌ ${err.message}`;
+      new ActionRowBuilder()
+        .addComponents(
+          animeButtons.slice(i, i + 4)
+        )
+
+    );
 
   }
+
+  rows.push(
+
+    new ActionRowBuilder()
+      .addComponents(
+
+        new ButtonBuilder()
+
+          .setCustomId(
+            `prev_${cat}_${page}`
+          )
+
+          .setLabel("⬅️")
+
+          .setStyle(
+            ButtonStyle.Primary
+          )
+
+          .setDisabled(
+            page === 0
+          ),
+
+        new ButtonBuilder()
+
+          .setCustomId(
+            `next_${cat}_${page}`
+          )
+
+          .setLabel("➡️")
+
+          .setStyle(
+            ButtonStyle.Primary
+          )
+
+          .setDisabled(
+            end >= list.length
+          )
+
+      )
+
+  );
+
+  return rows;
 
 }
 
@@ -212,7 +240,13 @@ client.once('ready', async () => {
       "1497454202044022784"
     );
 
-  if (!channel) return;
+  if (!channel) {
+
+    return console.log(
+      "❌ الروم غير موجود"
+    );
+
+  }
 
   const embed =
     new EmbedBuilder()
@@ -230,7 +264,8 @@ client.once('ready', async () => {
 • اقتراحات أنمي
 • تصنيفات كثيرة
 • بحث سريع
-• ملخصات طويلة بالذكاء الاصطناعي
+• صفحات تنقل
+• ملخصات طويلة
 
 ابدأ من الأزرار تحت 🎬
 `);
@@ -240,20 +275,33 @@ client.once('ready', async () => {
       .addComponents(
 
         new ButtonBuilder()
+
           .setCustomId('anime')
+
           .setLabel('🎌 أنمي')
-          .setStyle(ButtonStyle.Primary),
+
+          .setStyle(
+            ButtonStyle.Primary
+          ),
 
         new ButtonBuilder()
+
           .setCustomId('search')
+
           .setLabel('🔍 بحث')
-          .setStyle(ButtonStyle.Secondary)
+
+          .setStyle(
+            ButtonStyle.Secondary
+          )
 
       );
 
-  channel.send({
+  await channel.send({
+
     embeds: [embed],
+
     components: [row]
+
   });
 
 });
@@ -291,11 +339,14 @@ client.on(
 
                 .addOptions(
 
-                  Object.entries(categories)
-                    .map(([id, name]) => ({
+                  Object.entries(
+                    categories
+                  ).map(
+                    ([id, name]) => ({
                       label: name,
                       value: id
-                    }))
+                    })
+                  )
 
                 )
 
@@ -346,53 +397,87 @@ client.on(
 
         }
 
-        const rows = [];
-
-        for (
-          let i = 0;
-          i < list.length;
-          i += 5
-        ) {
-
-          const buttons =
-            list
-              .slice(i, i + 5)
-              .map(
-                (anime, index) =>
-
-                  new ButtonBuilder()
-
-                    .setCustomId(
-                      `anime_${cat}_${i + index}`
-                    )
-
-                    .setLabel(
-                      anime.name
-                    )
-
-                    .setStyle(
-                      ButtonStyle.Secondary
-                    )
-
-              );
-
-          rows.push(
-
-            new ActionRowBuilder()
-              .addComponents(buttons)
-
-          );
-
-        }
-
         return interaction.reply({
 
           content:
             `🎬 ${categories[cat]}`,
 
-          components: rows,
+          components:
+            createAnimePage(cat, 0),
 
           ephemeral: true
+
+        });
+
+      }
+
+      // =================
+      // Next Page
+      // =================
+
+      if (
+        interaction.isButton() &&
+        interaction.customId.startsWith(
+          "next_"
+        )
+      ) {
+
+        const [
+          ,
+          cat,
+          page
+        ] =
+          interaction.customId.split("_");
+
+        const nextPage =
+          Number(page) + 1;
+
+        return interaction.update({
+
+          content:
+            `🎬 ${categories[cat]}`,
+
+          components:
+            createAnimePage(
+              cat,
+              nextPage
+            )
+
+        });
+
+      }
+
+      // =================
+      // Previous Page
+      // =================
+
+      if (
+        interaction.isButton() &&
+        interaction.customId.startsWith(
+          "prev_"
+        )
+      ) {
+
+        const [
+          ,
+          cat,
+          page
+        ] =
+          interaction.customId.split("_");
+
+        const prevPage =
+          Number(page) - 1;
+
+        return interaction.update({
+
+          content:
+            `🎬 ${categories[cat]}`,
+
+          components:
+            createAnimePage(
+              cat,
+              prevPage
+            )
 
         });
 
@@ -436,11 +521,6 @@ client.on(
 
         }
 
-        const story =
-          await generateAnimeStory(
-            anime.name
-          );
-
         const embed =
           new EmbedBuilder()
 
@@ -451,7 +531,7 @@ client.on(
             )
 
             .setDescription(
-              `📺 ${anime.episodes} حلقة\n📅 ${anime.year}\n\n${story}`
+              `📺 ${anime.episodes} حلقة\n📅 ${anime.year}\n\n${anime.desc}`
             );
 
         return interaction.editReply({
@@ -533,7 +613,9 @@ client.on(
         const results =
           searchAnime(query);
 
-        if (!results.length) {
+        if (
+          !results.length
+        ) {
 
           return interaction.editReply({
 
@@ -630,11 +712,6 @@ client.on(
 
         }
 
-        const story =
-          await generateAnimeStory(
-            anime.name
-          );
-
         const embed =
           new EmbedBuilder()
 
@@ -645,7 +722,7 @@ client.on(
             )
 
             .setDescription(
-              `📺 ${anime.episodes} حلقة\n📅 ${anime.year}\n\n${story}`
+              `📺 ${anime.episodes} حلقة\n📅 ${anime.year}\n\n${anime.desc}`
             );
 
         return interaction.editReply({
