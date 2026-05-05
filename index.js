@@ -21,32 +21,34 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
 
-// ==========================
+// =====================
 // Gemini
-// ==========================
+// =====================
 
 const API_KEY = process.env.GEMINI_API_KEY;
 
 const API_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
 
-// ==========================
-// الكاش
-// ==========================
+// =====================
+// كاش
+// =====================
 
 const cachePath = './cache.json';
 
 let cache = {};
 
 if (fs.existsSync(cachePath)) {
+
   cache = JSON.parse(
     fs.readFileSync(cachePath, 'utf8')
   );
+
 }
 
-// ==========================
+// =====================
 // التصنيفات
-// ==========================
+// =====================
 
 const categories = {
   action: "اكشن",
@@ -59,9 +61,9 @@ const categories = {
   mystery: "غموض"
 };
 
-// ==========================
+// =====================
 // تحميل ملفات JSON
-// ==========================
+// =====================
 
 let data = {};
 
@@ -72,13 +74,14 @@ function loadData() {
     try {
 
       const file =
-        fs.readFileSync(`./${cat}.json`, 'utf8');
+        fs.readFileSync(
+          `./${cat}.json`,
+          'utf8'
+        );
 
       data[cat] = JSON.parse(file);
 
-    } catch (err) {
-
-      console.log(`❌ خطأ في ${cat}.json`);
+    } catch {
 
       data[cat] = [];
 
@@ -90,15 +93,16 @@ function loadData() {
 
 loadData();
 
-// ==========================
+// =====================
 // بحث
-// ==========================
+// =====================
 
 let lastSearch = [];
 
 function searchAnime(query) {
 
-  query = query.toLowerCase().trim();
+  query =
+    query.toLowerCase().trim();
 
   let results = [];
 
@@ -124,80 +128,106 @@ function searchAnime(query) {
 
 }
 
-// ==========================
-// Gemini AI
-// ==========================
+// =====================
+// توليد الملخص
+// =====================
 
 async function generateAnimeStory(animeName) {
 
-  // كاش
-  if (cache[animeName]) {
-    return cache[animeName];
-  }
+  try {
 
-  const prompt = `
+    // كاش
+    if (cache[animeName]) {
+      return cache[animeName];
+    }
+
+    const prompt = `
 اكتب ملخص عربي طويل جدًا لأنمي ${animeName}
 
 الشروط:
 - 20 سطر على الأقل
 - عربي فقط
-- بدون اختصار
 - بدون عناوين
-- تكلم عن الشخصيات والقصة والتطورات
+- بدون اختصار
+- اشرح الشخصيات والقصة والتطورات
 - لا تحرق النهاية بالكامل
 `;
 
-  const response = await fetch(
-    `${API_URL}?key=${API_KEY}`,
-    {
-      method: "POST",
+    const response = await fetch(
+      `${API_URL}?key=${API_KEY}`,
+      {
+        method: "POST",
 
-      headers: {
-        "Content-Type": "application/json"
-      },
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
 
-      body: JSON.stringify({
+        body: JSON.stringify({
 
-        contents: [
-          {
-            parts: [
-              {
-                text: prompt
-              }
-            ]
-          }
-        ]
+          contents: [
+            {
+              parts: [
+                {
+                  text: prompt
+                }
+              ]
+            }
+          ]
 
-      })
+        })
+
+      }
+    );
+
+    const json =
+      await response.json();
+
+    console.log(json);
+
+    if (!json.candidates) {
+
+      return "❌ تعذر إنشاء الملخص";
 
     }
-  );
 
-  const json = await response.json();
+    const text =
+      json.candidates[0]
+      .content.parts[0].text;
 
-  const text =
-    json?.candidates?.[0]?.content?.parts?.[0]?.text
-    || "❌ تعذر إنشاء الملخص";
+    // حفظ بالكاش
+    cache[animeName] = text;
 
-  // حفظ بالكاش
-  cache[animeName] = text;
+    fs.writeFileSync(
+      cachePath,
+      JSON.stringify(
+        cache,
+        null,
+        2
+      )
+    );
 
-  fs.writeFileSync(
-    cachePath,
-    JSON.stringify(cache, null, 2)
-  );
+    return text;
 
-  return text;
+  } catch (err) {
+
+    console.log(err);
+
+    return "❌ حصل خطأ أثناء إنشاء الملخص";
+
+  }
 
 }
 
-// ==========================
-// تشغيل
-// ==========================
+// =====================
+// تشغيل البوت
+// =====================
 
 client.once('ready', async () => {
 
-  console.log(`✅ ${client.user.tag}`);
+  console.log(
+    `✅ ${client.user.tag}`
+  );
 
   const channel =
     client.channels.cache.get(
@@ -205,54 +235,67 @@ client.once('ready', async () => {
     );
 
   if (!channel) {
-    return console.log("❌ الروم غير موجود");
+    return console.log(
+      "❌ الروم غير موجود"
+    );
   }
 
-  // رسالة الترحيب Embed
-  const welcomeEmbed = new EmbedBuilder()
+  // Embed الترحيب
+  const welcomeEmbed =
+    new EmbedBuilder()
 
-    .setColor("Blue")
+      .setColor("Blue")
 
-    .setTitle("🎌 مرحبًا بك في BloomyAnime")
+      .setTitle(
+        "🎌 مرحبًا بك في BloomyAnime"
+      )
 
-    .setDescription(`
-بوت أنميات يعطيك اقتراحات حسب التصنيف 🔥
+      .setDescription(`
+بوت اقتراحات أنمي مع ملخصات طويلة بالذكاء الاصطناعي 🔥
 
-## المميزات:
+✨ المميزات:
 • اقتراحات أنمي
-• بحث سريع
-• ملخصات طويلة بالذكاء الاصطناعي
 • تصنيفات كثيرة
+• بحث سريع
+• ملخصات طويلة
 • سرعة عالية
 
-اضغط الزر وابدأ ✨
+اضغط الزر وابدأ 🎬
 `);
 
   const row =
-    new ActionRowBuilder().addComponents(
+    new ActionRowBuilder()
+      .addComponents(
 
-      new ButtonBuilder()
-        .setCustomId('anime')
-        .setLabel('🎌 أنمي')
-        .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+          .setCustomId('anime')
+          .setLabel('🎌 أنمي')
+          .setStyle(
+            ButtonStyle.Primary
+          ),
 
-      new ButtonBuilder()
-        .setCustomId('search')
-        .setLabel('🔍 بحث')
-        .setStyle(ButtonStyle.Secondary)
+        new ButtonBuilder()
+          .setCustomId('search')
+          .setLabel('🔍 بحث')
+          .setStyle(
+            ButtonStyle.Secondary
+          )
 
-    );
+      );
 
   await channel.send({
+
     embeds: [welcomeEmbed],
+
     components: [row]
+
   });
 
 });
 
-// ==========================
+// =====================
 // التفاعلات
-// ==========================
+// =====================
 
 client.on(
   'interactionCreate',
@@ -260,9 +303,9 @@ client.on(
 
     try {
 
-      // ======================
+      // =================
       // زر الأنمي
-      // ======================
+      // =================
 
       if (
         interaction.isButton() &&
@@ -270,29 +313,36 @@ client.on(
       ) {
 
         const menu =
-          new ActionRowBuilder().addComponents(
+          new ActionRowBuilder()
+            .addComponents(
 
-            new StringSelectMenuBuilder()
+              new StringSelectMenuBuilder()
 
-              .setCustomId('cat')
+                .setCustomId('cat')
 
-              .setPlaceholder('اختر تصنيف')
+                .setPlaceholder(
+                  'اختر تصنيف'
+                )
 
-              .addOptions(
+                .addOptions(
 
-                Object.entries(categories)
-                  .map(([id, name]) => ({
-                    label: name,
-                    value: id
-                  }))
+                  Object.entries(
+                    categories
+                  ).map(
+                    ([id, name]) => ({
+                      label: name,
+                      value: id
+                    })
+                  )
 
-              )
+                )
 
-          );
+            );
 
         return interaction.reply({
 
-          content: "📚 اختر تصنيف:",
+          content:
+            "📚 اختر تصنيف:",
 
           components: [menu],
 
@@ -302,9 +352,9 @@ client.on(
 
       }
 
-      // ======================
+      // =================
       // اختيار تصنيف
-      // ======================
+      // =================
 
       if (
         interaction.isStringSelectMenu()
@@ -325,17 +375,14 @@ client.on(
 
           return interaction.reply({
 
-            content: "❌ لا يوجد أنميات",
+            content:
+              "❌ لا يوجد أنميات",
 
             ephemeral: true
 
           });
 
         }
-
-        // ======================
-        // كل الأنميات
-        // ======================
 
         const rows = [];
 
@@ -348,32 +395,38 @@ client.on(
           const buttons =
             list
               .slice(i, i + 5)
-              .map((anime, index) =>
+              .map(
+                (anime, index) =>
 
-                new ButtonBuilder()
+                  new ButtonBuilder()
 
-                  .setCustomId(
-                    `anime_${cat}_${i + index}`
-                  )
+                    .setCustomId(
+                      `anime_${cat}_${i + index}`
+                    )
 
-                  .setLabel(anime.name)
+                    .setLabel(
+                      anime.name
+                    )
 
-                  .setStyle(
-                    ButtonStyle.Secondary
-                  )
+                    .setStyle(
+                      ButtonStyle.Secondary
+                    )
 
               );
 
           rows.push(
+
             new ActionRowBuilder()
               .addComponents(buttons)
+
           );
 
         }
 
         return interaction.reply({
 
-          content: `🎬 ${categories[cat]}`,
+          content:
+            `🎬 ${categories[cat]}`,
 
           components: rows,
 
@@ -383,13 +436,15 @@ client.on(
 
       }
 
-      // ======================
+      // =================
       // عرض الأنمي
-      // ======================
+      // =================
 
       if (
         interaction.isButton() &&
-        interaction.customId.startsWith("anime_")
+        interaction.customId.startsWith(
+          "anime_"
+        )
       ) {
 
         await interaction.deferReply({
@@ -398,7 +453,11 @@ client.on(
 
         loadData();
 
-        const [, cat, index] =
+        const [
+          ,
+          cat,
+          index
+        ] =
           interaction.customId.split("_");
 
         const anime =
@@ -407,12 +466,14 @@ client.on(
         if (!anime) {
 
           return interaction.editReply({
-            content: "❌ الأنمي غير موجود"
+
+            content:
+              "❌ الأنمي غير موجود"
+
           });
 
         }
 
-        // Gemini
         const story =
           await generateAnimeStory(
             anime.name
@@ -432,14 +493,16 @@ client.on(
             );
 
         return interaction.editReply({
+
           embeds: [embed]
+
         });
 
       }
 
-      // ======================
+      // =================
       // زر البحث
-      // ======================
+      // =================
 
       if (
         interaction.isButton() &&
@@ -453,7 +516,9 @@ client.on(
               'search_modal'
             )
 
-            .setTitle('بحث');
+            .setTitle(
+              'بحث عن أنمي'
+            );
 
         const input =
           new TextInputBuilder()
@@ -471,8 +536,10 @@ client.on(
             );
 
         modal.addComponents(
+
           new ActionRowBuilder()
             .addComponents(input)
+
         );
 
         return interaction.showModal(
@@ -481,9 +548,9 @@ client.on(
 
       }
 
-      // ======================
+      // =================
       // تنفيذ البحث
-      // ======================
+      // =================
 
       if (
         interaction.isModalSubmit()
@@ -510,13 +577,15 @@ client.on(
 
           return interaction.editReply({
 
-            content: "❌ ما حصلت شيء"
+            content:
+              "❌ ما حصلت شيء"
 
           });
 
         }
 
-        lastSearch = results;
+        lastSearch =
+          results;
 
         const rows = [];
 
@@ -529,34 +598,38 @@ client.on(
           const buttons =
             results
               .slice(i, i + 5)
-              .map((anime, index) =>
+              .map(
+                (anime, index) =>
 
-                new ButtonBuilder()
+                  new ButtonBuilder()
 
-                  .setCustomId(
-                    `search_${i + index}`
-                  )
+                    .setCustomId(
+                      `search_${i + index}`
+                    )
 
-                  .setLabel(
-                    anime.name
-                  )
+                    .setLabel(
+                      anime.name
+                    )
 
-                  .setStyle(
-                    ButtonStyle.Secondary
-                  )
+                    .setStyle(
+                      ButtonStyle.Secondary
+                    )
 
               );
 
           rows.push(
+
             new ActionRowBuilder()
               .addComponents(buttons)
+
           );
 
         }
 
         return interaction.editReply({
 
-          content: "🔎 النتائج:",
+          content:
+            "🔎 النتائج:",
 
           components: rows
 
@@ -564,13 +637,15 @@ client.on(
 
       }
 
-      // ======================
-      // عرض نتيجة البحث
-      // ======================
+      // =================
+      // عرض البحث
+      // =================
 
       if (
         interaction.isButton() &&
-        interaction.customId.startsWith("search_")
+        interaction.customId.startsWith(
+          "search_"
+        )
       ) {
 
         await interaction.deferReply({
@@ -588,7 +663,8 @@ client.on(
 
           return interaction.editReply({
 
-            content: "❌ انتهت النتائج"
+            content:
+              "❌ انتهت النتائج"
 
           });
 
@@ -613,7 +689,9 @@ client.on(
             );
 
         return interaction.editReply({
+
           embeds: [embed]
+
         });
 
       }
@@ -627,4 +705,6 @@ client.on(
   }
 );
 
-client.login(process.env.TOKEN);
+client.login(
+  process.env.TOKEN
+);
