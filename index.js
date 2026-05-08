@@ -248,26 +248,32 @@ client.once('ready', async () => {
 
   }
 
-  const embed =
-    new EmbedBuilder()
+  const embed = new EmbedBuilder()
+.setColor("#7a3b1f")
 
-      .setColor("Blue")
+.setTitle("# 🎬 Bloomy Anime")
 
-      .setTitle(
-        "🎌 مرحبًا بك في BloomyAnime"
-      )
+.setDescription(`
+✨ مرحبًا بك في عالم الأنمي  
+اختر القسم الذي تريده من القائمة بالأسفل واستمتع بأفضل الأعمال المختارة بعناية 🎬
 
-      .setDescription(`
-بوت أنميات احترافي 🔥
+╭━━━━━━━━━━━━━━╮
+> 📺 أنميات كثيرة ومشوقة  
+> 🔥 تحديثات مستمرة دائمًا  
+> 🌟 تصنيفات متنوعة تناسب الجميع  
+> 🎭 أكشن • غموض • رعب • كوميديا • فنتازي  
+> ⚡ تجربة مرتبة وسهلة بالتنقل  
+╰━━━━━━━━━━━━━━╯
 
-✨ المميزات:
-• اقتراحات أنمي
-• تصنيفات كثيرة
-• بحث سريع
-• صفحات تنقل
-•ملخصات طويلة 
-الي عليك ابدأ من الأزرار تحت 🎬
-`);
+> والي عليك فقط تضغط تحت وابدأ رحلتك ✨
+`)
+
+.setFooter({ 
+  text: "Enjoy Watching 🍿 • Bloomy Anime" 
+})
+
+.setImage("https://i.ibb.co/cKvrhKmG/image-c0299293-1.png");
+  
 
   const row =
     new ActionRowBuilder()
