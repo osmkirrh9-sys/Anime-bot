@@ -249,7 +249,7 @@ client.once('ready', async () => {
   }
 
   const embed = new EmbedBuilder()
-.setColor("#7a3b1f")
+.setColor("#5865F2")
 
 .setTitle("# 🎬 Bloomy Anime")
 
