@@ -249,7 +249,7 @@ client.once('ready', async () => {
   }
 
   const embed = new EmbedBuilder()
-.setColor("#5865F2")
+.setColor("#7a3b1f")
 
 .setTitle("# 🎬 Bloomy Anime")
 
@@ -272,7 +272,7 @@ client.once('ready', async () => {
   text: "Enjoy Watching 🍿 • Bloomy Anime" 
 })
 
-.setImage("https://i.ibb.co/cKvrhKmG/image-c0299293-1.png");
+.setImage("https://i.ibb.co/VkZKyT7/a-wide-dark-moody-anime-banner-graphic-illustrat.png");
   
 
   const row =
