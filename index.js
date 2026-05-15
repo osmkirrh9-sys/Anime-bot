@@ -297,6 +297,18 @@ client.once('ready', async () => {
 
           .setStyle(
             ButtonStyle.Secondary
+          ),
+
+        new ButtonBuilder()
+
+          .setLabel('🎬 مشاهدة')
+
+          .setStyle(
+            ButtonStyle.Link
+          )
+
+          .setURL(
+            'https://anime3rb.com'
           )
 
       );
@@ -319,6 +331,8 @@ client.on(
   'interactionCreate',
   async interaction => {
 
+    if (interaction.guild.id !== "1446571990767894550") return;
+    
     try {
 
       // =================
@@ -526,6 +540,27 @@ client.on(
 
         }
 
+        const animeName =
+          encodeURIComponent(anime.name);
+
+        const watchRow =
+          new ActionRowBuilder()
+            .addComponents(
+
+              new ButtonBuilder()
+
+                .setLabel("🎬 مشاهدة الآن")
+
+                .setStyle(
+                  ButtonStyle.Link
+                )
+
+                .setURL(
+                  `https://anime3rb.com/?s=${animeName}`
+                )
+
+            );
+
         const embed =
           new EmbedBuilder()
 
@@ -541,7 +576,9 @@ client.on(
 
         return interaction.editReply({
 
-          embeds: [embed]
+          embeds: [embed],
+
+          components: [watchRow]
 
         });
 
@@ -717,6 +754,27 @@ client.on(
 
         }
 
+        const animeName =
+          encodeURIComponent(anime.name);
+
+        const watchRow =
+          new ActionRowBuilder()
+            .addComponents(
+
+              new ButtonBuilder()
+
+                .setLabel("🎬 مشاهدة الآن")
+
+                .setStyle(
+                  ButtonStyle.Link
+                )
+
+                .setURL(
+                  `https://anime3rb.com/?s=${animeName}`
+                )
+
+            );
+
         const embed =
           new EmbedBuilder()
 
@@ -732,7 +790,9 @@ client.on(
 
         return interaction.editReply({
 
-          embeds: [embed]
+          embeds: [embed],
+
+          components: [watchRow]
 
         });
 
